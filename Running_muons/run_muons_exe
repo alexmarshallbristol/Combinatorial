@@ -1,0 +1,30 @@
+#!/bin/bash
+
+source /cvmfs/ship.cern.ch/SHiP-2018/latest/setUp.sh
+SHIPBUILD_mymaster=/afs/cern.ch/user/a/amarshal/FairShip_STEP_TESTING
+export ALIBUILD_WORK_DIR=$SHIPBUILD_mymaster/sw #for alienv
+source $SHIPBUILD_mymaster/config.sh
+
+python /afs/cern.ch/user/a/amarshal/FairShip_STEP_TESTING/copy_file.py -jobid "$id"
+
+
+python $FAIRSHIP/macro/run_simScript.py --muShieldDesign 8 --tankDesign 6 --nuTauTargetDesign 3 -f muons.root --MuonBack --FastMuon -n 1000000 -g /eos/experiment/ship/data/magnet_geofiles/magnet_geo_to_test_oliver.root
+
+
+python $FAIRSHIP/macro/ShipReco.py -g geofile_full.conical.MuonBack-TGeant4.root -f ship.conical.MuonBack-TGeant4.root
+
+
+ls -l
+echo
+
+python /afs/cern.ch/user/a/amarshal/FairShip_STEP_TESTING/copy_file_post.py -jobid "$id"
+
+echo
+
+ls -l 
+rm dummy
+rm ship.conical.MuonBack-TGeant4.root
+rm ship.params.conical.MuonBack-TGeant4.root
+rm geofile_full.conical.MuonBack-TGeant4.root
+rm recohists.root
+rm muons.root
