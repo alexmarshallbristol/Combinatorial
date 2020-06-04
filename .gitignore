@@ -1,2 +1,7 @@
 FairShip
 sw
+*.npy
+ship.*
+dummy
+OUTPUT
+*.txt

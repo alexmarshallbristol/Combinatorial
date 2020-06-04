@@ -1,4 +1,30 @@
 
+
+must have https://github.com/ShipSoft/FairShip installed in directory
+or change pointing in setup file
+source /cvmfs/ship.cern.ch/SHiP-2018/latest/setUp.sh
+
+
+should be able to run with only a point to folder contianing files of muons
+and fairship installed from git
+produce all plots.
+
+for now this only works for up to 7500 files in the folder
+
+1- run muons with queue_run_muons.job
+
+2- run admin script
+	- create track files
+	- plot initial mom
+	- get single track info
+	- create pairs array
+
+3 - run pair jobs
+
+4 - collect data
+
+5 - plotting 
+
 --------------------------------------------------------------------------------------------------------------------------------------------
 /eos/experiment/ship/user/amarshal/afs_folders/FairSHiP_run_GAN_muons
 

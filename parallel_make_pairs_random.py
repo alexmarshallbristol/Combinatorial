@@ -23,8 +23,18 @@ import shutil
 parser = argparse.ArgumentParser()
 parser.add_argument('-jobid', action='store', dest='jobid', type=int,
 					help='jobid')
+parser.add_argument('-numberofjobs', action='store', dest='numberofjobs', type=int,
+					help='numberofjobs')
+parser.add_argument('-fileloc_rec', action='store', dest='fileloc_rec', type=str,
+                                        help='fileloc_rec')
+parser.add_argument('-fileloc_pair', action='store', dest='fileloc_pair', type=str,
+                                        help='fileloc_pair')
 results = parser.parse_args()
 job_id = int(results.jobid)
+number_of_jobs = int(results.numberofjobs)
+fileloc_rec = results.fileloc_rec
+fileloc_pair = results.fileloc_pair
+
 
 #####
 
@@ -775,22 +785,25 @@ import shipVeto
 #####
 
 print('JobID =',job_id)
-number_of_jobs = 250
 
 track_location_array = np.load('track_location_array.npy')
 
 tracks_file = ROOT.TFile("tracks.root","read")
 
-list_of_file_ID = np.load('list_of_file_ID.npy')
-
-track_truth_data = np.load('track_truth_data.npy')
-
-file_path_start = '/eos/experiment/ship/user/amarshal/muflux_root_1M/ship.conical.MuonBack-TGeant4_rec_'
+file_path_start = '%sship.conical.MuonBack-TGeant4_rec_'%fileloc_rec
 file_path_end = '.root'
 
 # GAN_weights = np.load('GAN_weights.npy')
 
 array_of_unique_parirs = np.load('array_of_unique_parirs.npy')
+
+
+
+
+# PAIR_DATA="/eos/experiment/ship/user/amarshal/muflux_root_1M/"
+# fileloc
+
+fileloc_pair = results.fileloc_pair
 
 
 
@@ -803,12 +816,7 @@ array_of_unique_parirs = array_of_unique_parirs[this_job:this_job+per_job]
 
 
 
-
-# quit()
-
-
 number_of_fittracks = float(np.shape(track_location_array)[0])
-# number_of_fittracks = 213.
 
 
 pairs_run_through = 0
@@ -840,7 +848,7 @@ for unique_pair in array_of_unique_parirs:
 			collected_pair_info = np.empty((0,16))
 
 		if pairs_run_through%2500 == 0:
-			shutil.copyfile('collected_pair_info_%d.npy'%job_id,'/eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_pairs/TMP_random_collected_pair_info_%d.npy'%job_id)
+			shutil.copyfile('collected_pair_info_%d.npy'%job_id,'%sTMP_collected_pair_info_%d.npy'%(fileloc_pair,job_id))
 					
 	except:
 		print(unique_pair, 'fail')
@@ -854,9 +862,9 @@ print(np.shape(collected_pair_info))
 saved_array = np.load('collected_pair_info_%d.npy'%job_id)
 collected_pair_info = np.concatenate((saved_array, collected_pair_info),axis=0)
 np.save('collected_pair_info_%d'%job_id,collected_pair_info)
-shutil.copyfile('collected_pair_info_%d.npy'%job_id,'/eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_pairs/TMP_random_collected_pair_info_%d.npy'%job_id)
+shutil.copyfile('collected_pair_info_%d.npy'%job_id,'%sTMP_collected_pair_info_%d.npy'%(fileloc_pair,job_id))
 
-shutil.move('/eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_pairs/TMP_random_collected_pair_info_%d.npy'%job_id,'/eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_pairs/random_collected_pair_info_%d.npy'%job_id)
+shutil.move('%sTMP_collected_pair_info_%d.npy'%(fileloc_pair,job_id),'%scollected_pair_info_%d.npy'%(fileloc_pair,job_id))
 
 print('Complete pair creation.')
 

@@ -1,0 +1,11 @@
+job = SHiP_Muons
+Universe = vanilla
+executable = run_muons_exe
+environment = "id=$(Process)"
+transfer_input_files = setup.sh, array_of_unique_parirs.npy, parallel_make_pairs_random.py, geofile_full.conical.MuonBack-TGeant4.root, tracks.root, track_location_array.npy
+when_to_transfer_output = ON_EXIT
+log = OUTPUT/$(job)_$(Cluster).log
+output = /afs/cern.ch/user/a/amarshal/Combinatorial/OUTPUT/$(job)_$(Cluster)_$(Process).out
+error = /afs/cern.ch/user/a/amarshal/Combinatorial/OUTPUT/$(job)_$(Cluster)_$(Process).out
++JobFlavour = "tomorrow"
+queue 1

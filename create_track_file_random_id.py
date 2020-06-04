@@ -18,6 +18,17 @@ import glob
 import pickle 
 
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-fileloc', action='store', dest='fileloc', type=str,
+                                        help='fileloc')
+results = parser.parse_args()
+fileloc = results.fileloc
+
+
+
+
 debug = False
 chi2CutOff  = 4.
 PDG = ROOT.TDatabasePDG.Instance()
@@ -557,8 +568,15 @@ def ImpactParameter2(point,tPos,tMom):
 
 import shipVeto
 
-# files = glob.glob('/eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_FairSHiP/GAN_ship.conical.MuonBack-TGeant4_rec_100047774.root')
-files = glob.glob('/eos/experiment/ship/user/amarshal/muflux_root_1M/ship.conical.MuonBack-TGeant4_rec_*')
+
+################################################################################################################################################
+################################################################################################################################################
+################################################################################################################################################
+
+
+
+
+files = glob.glob('%sship.conical.MuonBack-TGeant4_rec_*'%fileloc)
 
 single_muon_track_info = np.empty((0,8))
 key = -1
@@ -576,10 +594,7 @@ try:
 except:
 	print('tracks.root does not exist yet')
 
-list_of_file_ID = np.load('list_of_file_ID.npy')
 
-# print(list_of_file_ID)
-# quit()
 track_location_array = np.empty((0, 4))
 
 file_id = -1
@@ -588,8 +603,16 @@ broken_files = np.empty(0)
 
 start_momentum = np.empty((0,3))
 
+def find_between_r( s, first, last ):
+    try:
+        start = s.rindex( first ) + len( first )
+        end = s.rindex( last, start )
+        return s[start:end]
+    except ValueError:
+        return ""
 
-for file in files[3:]:
+
+for file in files:
 	print(file)
 	try:
 		file_id += 1
@@ -598,26 +621,9 @@ for file in files[3:]:
 		sTree = f.cbmsim
 		nEvents = min(sTree.GetEntries(),nEvents)
 
-		# prepare veto decisions
-		# print(' ')
-		# print('File random_ID:',file[101:110]
-		file_index = int(file[84:-5])
-		# print(list_of_file_ID)
-
-		# print(np.where(list_of_file_ID==file_id)[0][0])
-
-		# file_index = list_of_file_ID[np.where(list_of_file_ID==file_id)[0][0]]
-		# print(file_index)
-		# quit()
-		# print(np.where(list_of_file_ID==file[84:-5]), np.shape(np.where(list_of_file_ID==file[84:-5])))
-		# file_index = np.where(list_of_file_ID==file[84:-5])[0][0]
+		file_index = int(find_between_r(file, "_", ".root" ))
+		
 		print('File index:',file_index)
-		# quit()
-		# print('nEvents:',int(nEvents))
-
-
-
-
 
 		veto = shipVeto.Task(sTree)
 		vetoDets={}
@@ -633,25 +639,16 @@ for file in files[3:]:
 			for atrack in sTree.FitTracks:
 				track_id += 1
 				track_macro_id += 1
-				# print('Track -',track_macro_id+1)
-
-				
-
-				# START of track checks
 
 				fittedTracks_event_num = np.append(fittedTracks_event_num, event_num)
 				key=0
 				counting += 1
 
-				# if not checkFiducialVolume(sTree,key,dy): continue
 				fitStatus   = atrack.getFitStatus()
 				nmeas = fitStatus.getNdf()
-				# if not fitStatus.isFitConverged() : continue
-				# if nmeas < measCut: continue
-				if nmeas < 0: continue #there is a -1E99 value - this breaks stuff
-				# fittedTracks.append(atrack)
+
+				if nmeas < 0: continue
 				chi2 = fitStatus.getChi2()
-				# print(nmeas)
 				prob = ROOT.TMath.Prob(chi2,int(nmeas))
 				rchi2 = chi2/nmeas
 				if rchi2>chi2CutOff: continue
@@ -663,7 +660,7 @@ for file in files[3:]:
 
 				Px,Py,Pz = fittedState.getMom().x(),fittedState.getMom().y(),fittedState.getMom().z()
 				cov = fittedState.get6DCov()
-				# if len(sTree.fitTrack2MC)-1<key: continue
+
 				mcPartKey = sTree.fitTrack2MC[key]
 				mcPart    = sTree.MCTrack[mcPartKey]
 				if not mcPart : continue
@@ -682,10 +679,7 @@ for file in files[3:]:
 				delPOverP = (Ptruth - P)/Ptruth
 				delPOverPz = (1./Ptruthz - 1./Pz) * Ptruthz
 
-				# print(mcPart.GetWeight(), mcPart.GetWeight())
-
 				weight = mcPart.GetWeight()
-				# print('w',weight)
 
 				trackDir = fittedState.getDir()
 				trackPos = fittedState.getPos()
@@ -699,25 +693,9 @@ for file in files[3:]:
 
 				hits_in_straw_stations = np.zeros(4)
 
-				# for ahit in sTree.strawtubesPoint:
-				# 	detID = ahit.GetDetectorID()
-
-				# 	# print(int(str(detID)[:1]))
-
-				# 	if int(str(detID)[:1]) == 1:
-				# 		hits_in_straw_stations[0] = 1
-				# 	if int(str(detID)[:1]) == 2:
-				# 		hits_in_straw_stations[1] = 1
-				# 	if int(str(detID)[:1]) == 3:
-				# 		hits_in_straw_stations[2] = 1
-				# 	if int(str(detID)[:1]) == 4:
-				# 		hits_in_straw_stations[3] = 1
-
 				for ahit in sTree.Digi_StrawtubesHits:
-					# help(ahit)
 
 					detID = ahit.GetDetectorID()
-					# print(detID)
 					if int(str(detID)[:1]) == 1:
 						hits_in_straw_stations[0] = 1
 					if int(str(detID)[:1]) == 2:
@@ -727,33 +705,24 @@ for file in files[3:]:
 					if int(str(detID)[:1]) == 4:
 						hits_in_straw_stations[3] = 1
 
-					# print(detID)
-				# print(' ')
 				hits_before_and_after = 0
 				if hits_in_straw_stations[0] == 1 or hits_in_straw_stations[1] == 1:
 					if hits_in_straw_stations[2] == 1 or hits_in_straw_stations[3] == 1:
 						hits_before_and_after = 1
-				# print(hits_before_and_after)
 
 				single_muon_track_info = np.append(single_muon_track_info, [[weight, nmeas, rchi2, P, Px, Py, Pz, hits_before_and_after]], axis=0)
 
-
-				# END of track checks
 				if nmeas > 25 and rchi2 > 0 and rchi2 < 5 and hits_before_and_after != 0: 
 					tracks_file = ROOT.TFile("tracks.root","update")
 					tracks_file.WriteObjectAny(atrack,"genfit::Track","track_%d"%np.shape(single_muon_track_info)[0])
 					tracks_file.Close()
 
-
-
 					track_location_array = np.append(track_location_array,[[file_index, event_id, track_id, "track_%d"%np.shape(single_muon_track_info)[0]]],axis=0)
-					# print(file_index, event_id, track_id, "track_%d"%np.shape(single_muon_track_info)[0])
-				#print(track_location_array[-1])
-				# print("track_%d"%np.shape(single_muon_track_info)[0], nmeas)
+
 	except:
 		print('broken file')
 		broken_files = np.append(broken_files, file[84:-5])
-# quit()
+
 print('BROKEN',broken_files,np.shape(broken_files))
 print(' ')
 print('Scanning files complete')

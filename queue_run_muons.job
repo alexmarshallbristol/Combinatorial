@@ -1,0 +1,10 @@
+job = SHiP_Muons
+Universe = vanilla
+executable = run_muons_exe
+environment = "id=$(Process)"
+transfer_input_files = setup.sh, copy_file.py, copy_file_post.py
+when_to_transfer_output = ON_EXIT
+log = OUTPUT/$(job)_$(Cluster).log
++JobFlavour = "testmatch"
+queue 257
+

@@ -17,6 +17,15 @@ import math
 import glob 
 import pickle 
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-fileloc', action='store', dest='fileloc', type=str,
+                                        help='fileloc')
+results = parser.parse_args()
+fileloc = results.fileloc
+
+
 
 debug = False
 chi2CutOff  = 4.
@@ -563,7 +572,7 @@ import shipVeto
 # file_path_start = '/eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_FairSHiP/GAN_ship.conical.MuonBack-TGeant4_rec_'
 # file_path_end = '.root'
 
-file_path_start = '/eos/experiment/ship/user/amarshal/muflux_root_1M/ship.conical.MuonBack-TGeant4_rec_'
+file_path_start = '%sship.conical.MuonBack-TGeant4_rec_'%fileloc
 file_path_end = '.root'
 
 track_location_array = np.load('track_location_array.npy')
@@ -572,8 +581,6 @@ track_location_array = np.load('track_location_array.npy')
 # 	print(x)
 # quit()
 tracks_file = ROOT.TFile("tracks.root","read")
-
-list_of_file_ID = np.load('list_of_file_ID.npy')
 
 save_track_truth_data = np.empty((0,17))
 
@@ -584,39 +591,28 @@ iiii = 0
 for key in tracks_file.GetListOfKeys():
 	iiii += 1
 	print(iiii)
-	# print(' ')
-	print(key)
-	# key = 'track_1'
-	print(str(key)[str(key).find('"')+1:str(key)[str(key).find('"')+1:].find('"')-len(str(key)[str(key).find('"')+1:])]+";1")
+	if iiii % 500 == 0: print(iiii, 'of', np.shape(track_location_array)[0], 'tracks.')
 
 	track = tracks_file.Get(str(key)[str(key).find('"')+1:str(key)[str(key).find('"')+1:].find('"')-len(str(key)[str(key).find('"')+1:])]+";1")
 
-	# help(track)
-	print(track)
 	fitStatus   = track.getFitStatus()
 	fittedState = track.getFittedState()
-	# quit()
+
 	# Can now play with track properties...
 	nmeas = fitStatus.getNdf()
 	P_reco = fittedState.getMomMag()
 	P_reco_T = fittedState.getMom().Pt()
 	# Acquiring MC truth level information of muon event that produced track...
-	print('here',str(key)[str(key).find('"')+1:str(key)[str(key).find('"')+1:].find('"')-len(str(key)[str(key).find('"')+1:])])
 	id_num = np.where(track_location_array == str(key)[str(key).find('"')+1:str(key)[str(key).find('"')+1:].find('"')-len(str(key)[str(key).find('"')+1:])])[0][0]
-	# file_random_id = int(list_of_file_ID[int(track_location_array[id_num][0])])
 	file_random_id = int(track_location_array[id_num][0])
-	# print('Track is from file:',file_random_id)
 	specific_file = file_path_start + str(file_random_id) + file_path_end
 	event_id = int(track_location_array[id_num][1])
 
-	print('specific_file',specific_file, 'event_id', event_id)
 
 	f = ROOT.TFile(specific_file)
 	sTree = f.cbmsim
 	nEvents = min(sTree.GetEntries(),nEvents)
-	print('sTree.GetEntries()',sTree.GetEntries())
 	sTree.GetEntry(event_id)
-
 
 	for e in sTree.MCTrack:
 		initial_px = e.GetPx()
@@ -627,15 +623,7 @@ for key in tracks_file.GetListOfKeys():
 		initial_z = e.GetStartZ()
 		break
 
-
-	# weight = 1
-
-	# p_index = np.digitize(np.sqrt(initial_px**2+initial_py**2+initial_pz**2), x_values_bins_limits)
-	# pt_index = np.digitize(np.sqrt(initial_px**2+initial_py**2), y_values_bins_limits)
-
 	weight = 1
-	# weight = (1/np.fliplr(GAN_KDE_ratio.T)[p_index-1,pt_index-1])*0.97505166029109325 # correction factor obtained with /afs/cern.ch/user/a/amarshal/What_breaks_shield/get_ratio_for_weight_normalisation_35.py script. 
-	# print(weight)
 
 	vaccum_vessel_hits_temp = np.empty((0,7))
 	hits_SBT_bool = 0
@@ -657,53 +645,6 @@ for key in tracks_file.GetListOfKeys():
 print(np.shape(save_track_truth_data))
 
 np.save('track_truth_data',save_track_truth_data)
-# cmap = plt.get_cmap('viridis')
-# cmap.set_under(color='white') 
-
-
-# # plt.hist(save_track_truth_data[:,0],bins=25)
-# # plt.savefig('plots/test2')
-# # plt.close('all')
-
-
-# # quit()
-# p_t_list = np.sqrt(save_track_truth_data[:,4]**2+save_track_truth_data[:,5]**2)
-
-# # plt.figure(figsize=(8,4))
-# # plt.subplot(1,2,1)
-# plt.hist2d(save_track_truth_data[:,6],p_t_list,bins=100, weights=save_track_truth_data[:,0], cmap=cmap,vmin=1E-7)
-# plt.ylabel('P_t start')
-# plt.xlabel('P_z start')
-
-# # plt.subplot(1,2,2)
-# # plt.hist2d(save_track_truth_data[:,3],save_track_truth_data[:,2],bins=35, cmap=cmap,vmin=1E-7)
-# # plt.ylabel('y start')
-# # plt.xlabel('z start')
-# plt.colorbar()
-# plt.savefig('plots/test')
-# plt.close('all') 
-
-# # plt.figure(figsize=(8,4))
-# # plt.subplot(1,2,1)
-# # plt.hist2d(vaccum_vessel_hits[:,3],vaccum_vessel_hits[:,4],bins=35, cmap=cmap,vmin=1E-7)
-# # plt.ylabel('y')
-# # plt.xlabel('x')
-# # plt.subplot(1,2,2)
-# # plt.hist2d(vaccum_vessel_hits[:,5],vaccum_vessel_hits[:,4],bins=35, cmap=cmap,vmin=1E-7)
-# # plt.ylabel('y')
-# # plt.xlabel('z')
-# # plt.savefig('plots/pos_vaccum_ves')
-# # plt.close('all') 
-
-
-# # plt.hist2d(vaccum_vessel_hits[:,2],vaccum_vessel_hits[:,3],bins=35, cmap=cmap,vmin=1E-7)
-# # plt.ylabel('P_z')
-# # plt.xlabel('P_t')
-# # plt.savefig('plots/mom_strawtubes')
-# # plt.close('all')
-
-
-
 
 
 

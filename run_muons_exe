@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source setup.sh
+
+python copy_file.py -jobid "$id" -fileloc "$MUON_FILES"
+
+python $FAIRSHIP/macro/run_simScript.py -f muons.root --MuonBack --FastMuon -n 1000000 
+
+python $FAIRSHIP/macro/ShipReco.py -g geofile_full.conical.MuonBack-TGeant4.root -f ship.conical.MuonBack-TGeant4.root
+
+python copy_file_post.py -jobid "$id" -fileloc "$REC_FILES"
+
+ls -l 
+rm dummy
+rm *.root
+rm *.npy
+rm *.txt
