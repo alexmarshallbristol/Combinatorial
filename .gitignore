@@ -7,3 +7,5 @@ OUTPUT
 *.txt
 *.png
 ._*
+tracks.root
+amarshal*
