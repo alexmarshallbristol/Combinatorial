@@ -3,6 +3,7 @@
 source setup.sh
 
 python parallel_make_pairs_random.py -jobid "$id" -fileloc_rec "$REC_FILES" -fileloc_pair "$PAIR_DATA" -numberofjobs "$NUM_CORES"
+# python parallel_make_pairs_random.py -jobid 0 -fileloc_rec "$REC_FILES" -fileloc_pair "$PAIR_DATA" -numberofjobs "$NUM_CORES"
 
 ls -l 
 rm dummy

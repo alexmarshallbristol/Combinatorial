@@ -57,6 +57,7 @@ eosship = ROOT.gSystem.Getenv("EOSSHIP")
 
 # geoFile = '/afs/cern.ch/user/a/amarshal/FairSHiP_run_GAN_muons/geofile_full.conical.MuonBack-TGeant4.root'
 geoFile = 'geofile_full.conical.MuonBack-TGeant4.root'
+
 # geoFile = '/afs/cern.ch/user/a/amarshal/FairSHiP_run_GAN_muons/geofile.root'
 fgeo = ROOT.TFile(geoFile)
 
@@ -325,61 +326,74 @@ def myVertex(t1,t2,PosDir):
 			Z = c.z()+v.z()*t
 			return X,Y,Z,abs(dist)
 def  RedoVertexing(t1,t2):    
-					PosDir = [] 
-					for tr in [t1,t2]:
-						xx  = tr
-						# help(xx)
-						# PosDir[tr] = [xx.getPos(),xx.getDir()]
-						# print(xx.getPos()[0])
-						PosDir.append([xx.getPos(),xx.getDir()])
-					# print(PosDir)
-					# PosDir[0] = [t1.getPos(),t1.getDir()]
-					# PosDir[1] = [t2.getPos(),t2.getDir()]
-					# print('here',PosDir)
-					xv,yv,zv,doca = myVertex(t1,t2,PosDir)
+	# print('1')
+	PosDir = [] 
+	for tr in [t1,t2]:
+		xx  = tr
+		# help(xx)
+		# PosDir[tr] = [xx.getPos(),xx.getDir()]
+		# print(xx.getPos()[0])
+		PosDir.append([xx.getPos(),xx.getDir()])
+	# print(PosDir)
+	# PosDir[0] = [t1.getPos(),t1.getDir()]
+	# PosDir[1] = [t2.getPos(),t2.getDir()]
+	# print('here',PosDir)
+	# print('2')
+	xv,yv,zv,doca = myVertex(t1,t2,PosDir)
 # as we have learned, need iterative procedure
-					dz = 99999.
-					reps,states,newPosDir = {},{},{}
-					newPosDir = []
-					parallelToZ = ROOT.TVector3(0., 0., 1.)
-					rc = True 
-					step = 0
-					while dz > 0.1:
-						zBefore = zv
-						newPos = ROOT.TVector3(xv,yv,zv)
-					# make a new rep for track 1,2
-						for tr in [t1,t2]:     
-							xx = tr
-							reps[tr]   = ROOT.genfit.RKTrackRep(xx.getPDG())
-							states[tr] = ROOT.genfit.StateOnPlane(reps[tr])
-							reps[tr].setPosMom(states[tr],xx.getPos(),xx.getMom())
-							try:
-								reps[tr].extrapolateToPoint(states[tr], newPos, False)
-							except:
-								# print 'SHiPAna: extrapolation did not work'
-								rc = False  
-								break
-							# help(reps[tr].getPos(states[tr]))
-							# print(reps[tr].getPos(states[tr]))
-							# print(reps[tr].getPos(states[tr])[0])
-							# print(float(reps[tr].getPos(states[tr])[0]))
+	# print('3')
+	dz = 99999.
+	reps,states,newPosDir = {},{},{}
+	newPosDir = []
+	parallelToZ = ROOT.TVector3(0., 0., 1.)
+	rc = True 
+	step = 0
+	# print('4')
+	while dz > 0.1:
+		zBefore = zv
+		newPos = ROOT.TVector3(xv,yv,zv)
+	# make a new rep for track 1,2
+		for tr in [t1,t2]:     
+			xx = tr
+			# print('in')
+			reps[tr]   = ROOT.genfit.RKTrackRep(xx.getPDG())
+			# print('in1')
+			states[tr] = ROOT.genfit.StateOnPlane(reps[tr])
+			# print('in2')
+			reps[tr].setPosMom(states[tr],xx.getPos(),xx.getMom())
+			# print('in3')
+			try:
+				reps[tr].extrapolateToPoint(states[tr], newPos, False)
+			except:
+				# print 'SHiPAna: extrapolation did not work'
+				rc = False  
+				break
 
-							# newPosDir[tr] = [reps[tr].getPos(states[tr]),reps[tr].getDir(states[tr])]
 
-							# newPosDir.append([float(reps[tr].getPos(states[tr])[0]),float(reps[tr].getPos(states[tr])[1]),float(reps[tr].getPos(states[tr])[2]),float(reps[tr].getDir(states[tr])[0]),float(reps[tr].getDir(states[tr])[1]),float(reps[tr].getDir(states[tr])[2])])
-							newPosDir.append([reps[tr].getPos(states[tr]),reps[tr].getDir(states[tr])])
-							# print('newposdir',newPosDir)
-						if not rc: break
-						xv,yv,zv,doca = myVertex(t1,t2,newPosDir)
-						dz = abs(zBefore-zv)
-						step+=1
-						if step > 10:  
-									# print 'abort iteration, too many steps, pos=',xv,yv,zv,' doca=',doca,'z before and dz',zBefore,dz
-									rc = False
-									break 
-					if not rc: return xv,yv,zv,doca # extrapolation failed, makes no sense to continue
-			
-					return xv,yv,zv,doca
+			# help(reps[tr].getPos(states[tr]))
+			# print(reps[tr].getPos(states[tr]))
+			# print(reps[tr].getPos(states[tr])[0])
+			# print(float(reps[tr].getPos(states[tr])[0]))
+
+			# newPosDir[tr] = [reps[tr].getPos(states[tr]),reps[tr].getDir(states[tr])]
+
+			# newPosDir.append([float(reps[tr].getPos(states[tr])[0]),float(reps[tr].getPos(states[tr])[1]),float(reps[tr].getPos(states[tr])[2]),float(reps[tr].getDir(states[tr])[0]),float(reps[tr].getDir(states[tr])[1]),float(reps[tr].getDir(states[tr])[2])])
+			# print('in4')
+			newPosDir.append([reps[tr].getPos(states[tr]),reps[tr].getDir(states[tr])])
+			# print('in5')
+			# print('newposdir',newPosDir)
+		# print('fff')
+		if not rc: break
+		xv,yv,zv,doca = myVertex(t1,t2,newPosDir)
+		dz = abs(zBefore-zv)
+		step+=1
+		if step > 10:  
+					# print 'abort iteration, too many steps, pos=',xv,yv,zv,' doca=',doca,'z before and dz',zBefore,dz
+					rc = False
+					break 
+	if not rc: return xv,yv,zv,doca # extrapolation failed, makes no sense to continue
+
+	return xv,yv,zv,doca
 
 
 def fitSingleGauss(x,ba=None,be=None):
@@ -438,118 +452,7 @@ def ecalCluster2MC(aClus):
 								mMax = m
 		return mMax,eMax/aClus.Energy()
 
-def makePlots():
-			ut.bookCanvas(h,key='ecalanalysis',title='cluster map',nx=800,ny=600,cx=1,cy=1)
-			cv = h['ecalanalysis'].cd(1)
-			h['ecalClusters'].Draw('colz')
-			ut.bookCanvas(h,key='ecalCluster2Track',title='Ecal cluster distances to track impact',nx=1600,ny=800,cx=4,cy=2)
-			if h.has_key("ecalReconstructed_dist_mu+"):
-				cv = h['ecalCluster2Track'].cd(1)
-				h['ecalReconstructed_distx_mu+'].Draw()
-				cv = h['ecalCluster2Track'].cd(2)
-				h['ecalReconstructed_disty_mu+'].Draw()
-			if h.has_key("ecalReconstructed_dist_pi+"):
-				cv = h['ecalCluster2Track'].cd(3)
-				h['ecalReconstructed_distx_pi+'].Draw()
-				cv = h['ecalCluster2Track'].cd(4)
-				h['ecalReconstructed_disty_pi+'].Draw()
-			if h.has_key("ecalReconstructed_dist_mu-"):
-				cv = h['ecalCluster2Track'].cd(5)
-				h['ecalReconstructed_distx_mu-'].Draw()
-				cv = h['ecalCluster2Track'].cd(6)
-				h['ecalReconstructed_disty_mu-'].Draw()
-			if h.has_key("ecalReconstructed_dist_pi-"):
-				cv = h['ecalCluster2Track'].cd(7)
-				h['ecalReconstructed_distx_pi-'].Draw()
-				cv = h['ecalCluster2Track'].cd(8)
-				h['ecalReconstructed_disty_pi-'].Draw()
 
-			ut.bookCanvas(h,key='strawanalysis',title='Distance to wire and mean nr of hits',nx=1200,ny=600,cx=3,cy=1)
-			cv = h['strawanalysis'].cd(1)
-			h['disty'].Draw()
-			h['distu'].Draw('same')
-			h['distv'].Draw('same')
-			cv = h['strawanalysis'].cd(2)
-			h['meanhits'].Draw()
-			cv = h['strawanalysis'].cd(3)
-			h['meas2'].Draw()
-			ut.bookCanvas(h,key='fitresults',title='Fit Results',nx=1600,ny=1200,cx=2,cy=2)
-			cv = h['fitresults'].cd(1)
-			h['delPOverPz'].Draw('box')
-			cv = h['fitresults'].cd(2)
-			cv.SetLogy(1)
-			h['prob'].Draw()
-			cv = h['fitresults'].cd(3)
-			h['delPOverPz_proj'] = h['delPOverPz'].ProjectionY()
-			ROOT.gStyle.SetOptFit(11111)
-			h['delPOverPz_proj'].Draw()
-			h['delPOverPz_proj'].Fit('gaus')
-			cv = h['fitresults'].cd(4)
-			h['delPOverP2z_proj'] = h['delPOverP2z'].ProjectionY()
-			h['delPOverP2z_proj'].Draw()
-			fitSingleGauss('delPOverP2z_proj')
-			h['fitresults'].Print('fitresults.gif')
-			ut.bookCanvas(h,key='fitresults2',title='Fit Results',nx=1600,ny=1200,cx=2,cy=2)
-			print('finished with first canvas')
-			cv = h['fitresults2'].cd(1)
-			h['Doca'].SetXTitle('closest distance between 2 tracks   [cm]')
-			h['Doca'].SetYTitle('N/1mm')
-			h['Doca'].Draw()
-			cv = h['fitresults2'].cd(2)
-			h['IP0'].SetXTitle('impact parameter to p-target   [cm]')
-			h['IP0'].SetYTitle('N/1cm')
-			h['IP0'].Draw()
-			cv = h['fitresults2'].cd(3)
-			h['HNL'].SetXTitle('inv. mass  [GeV/c2]')
-			h['HNL'].SetYTitle('N/4MeV/c2')
-			h['HNL'].Draw()
-			fitSingleGauss('HNL',0.9,1.1)
-			cv = h['fitresults2'].cd(4)
-			h['IP0/mass'].SetXTitle('inv. mass  [GeV/c2]')
-			h['IP0/mass'].SetYTitle('IP [cm]')
-			h['IP0/mass'].Draw('colz')
-			h['fitresults2'].Print('fitresults2.gif')
-			ut.bookCanvas(h,key='vxpulls',title='Vertex resol and pulls',nx=1600,ny=1200,cx=3,cy=2)
-			cv = h['vxpulls'].cd(4)
-			h['Vxpull'].Draw()
-			cv = h['vxpulls'].cd(5)
-			h['Vypull'].Draw()
-			cv = h['vxpulls'].cd(6)
-			h['Vzpull'].Draw()
-			cv = h['vxpulls'].cd(1)
-			h['Vxresol'].Draw()
-			cv = h['vxpulls'].cd(2)
-			h['Vyresol'].Draw()
-			cv = h['vxpulls'].cd(3)
-			h['Vzresol'].Draw()
-			ut.bookCanvas(h,key='trpulls',title='momentum pulls',nx=1600,ny=600,cx=3,cy=1)
-			cv = h['trpulls'].cd(1)
-			h['pullPOverPx_proj']=h['pullPOverPx'].ProjectionY()
-			h['pullPOverPx_proj'].Draw()
-			cv = h['trpulls'].cd(2)
-			h['pullPOverPy_proj']=h['pullPOverPy'].ProjectionY()
-			h['pullPOverPy_proj'].Draw()
-			cv = h['trpulls'].cd(3)
-			h['pullPOverPz_proj']=h['pullPOverPz'].ProjectionY()
-			h['pullPOverPz_proj'].Draw()
-			ut.bookCanvas(h,key='vetodecisions',title='Veto Detectors',nx=1600,ny=600,cx=5,cy=1)
-			cv = h['vetodecisions'].cd(1)
-			cv.SetLogy(1)
-			h['nrtracks'].Draw()
-			cv = h['vetodecisions'].cd(2)
-			cv.SetLogy(1)
-			h['nrSVT'].Draw()
-			cv = h['vetodecisions'].cd(3)
-			cv.SetLogy(1)
-			h['nrUVT'].Draw()
-			cv = h['vetodecisions'].cd(4)
-			cv.SetLogy(1)
-			h['nrSBT'].Draw()
-			cv = h['vetodecisions'].cd(5)
-			cv.SetLogy(1)
-			h['nrRPC'].Draw()
-#
-			print('finished making plots')
 # calculate z front face of ecal, needed later
 top = ROOT.gGeoManager.GetTopVolume()
 ecal = None
@@ -587,25 +490,55 @@ def ImpactParameter_x_y(point,tPos,tMom):
 
 		return x, y, z
 
+
+def find_between( s, first, last ):
+    try:
+        start = s.index( first ) + len( first )
+        end = s.index( last, start )
+        return s[start:end]
+    except ValueError:
+        return ""
+
 def create_pair(i,j, weight_i, weight_j):
 
 	'''
 		Load correct tracks from file, based on indexes i and j
 	'''
+	print('creating pair',i,j,weight_i,weight_j)
 	try:
 		key_i = tracks_file.GetListOfKeys()[i]
-		# print(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])])
+		get_track_string = 'track'+find_between(str(key_i),"track"," ")+';1'
+		track_i = tracks_file.Get(get_track_string)
 
-		track_i = tracks_file.Get(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])]+";1") 
+		# print(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])]+";1")
+		# # print(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])])
+		# track_i = tracks_file.Get(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])]+";1") 
+		# print(track_i)
 
+		
+
+		# help(track_i)
+		# print('end of 2')
 		fitStatus_i   = track_i.getFitStatus()
 		fittedState_i = track_i.getFittedState()
 
+		# print('end of 1')
+		# key_j = tracks_file.GetListOfKeys()[j]
+		# track_j = tracks_file.Get(str(key_j)[str(key_j).find('"')+1:str(key_j)[str(key_j).find('"')+1:].find('"')-len(str(key_j)[str(key_j).find('"')+1:])]+";1") 
+		
 		key_j = tracks_file.GetListOfKeys()[j]
-		track_j = tracks_file.Get(str(key_j)[str(key_j).find('"')+1:str(key_j)[str(key_j).find('"')+1:].find('"')-len(str(key_j)[str(key_j).find('"')+1:])]+";1") 
+		get_track_string = 'track'+find_between(str(key_j),"track"," ")+';1'
+		track_j = tracks_file.Get(get_track_string)
 
+		# print('end of 2')
 		fitStatus_j   = track_j.getFitStatus()
 		fittedState_j = track_j.getFittedState()
+		# print('end of 2')
+
+
+
+
+
 
 		'''
 			Can now play with track properties...
@@ -615,18 +548,18 @@ def create_pair(i,j, weight_i, weight_j):
 		'''
 			Get nmeas and reduced chi2
 		'''
-
+		# print('1')
 		nmeas_i = fitStatus_i.getNdf()
 		nmeas_j = fitStatus_j.getNdf()
-
+		# print('2')
 		chi2_i = fitStatus_i.getChi2()
 		prob_i = ROOT.TMath.Prob(chi2_i,int(nmeas_i))
 		rchi2_i = chi2_i/nmeas_i
-
+		# print('3')
 		chi2_j = fitStatus_j.getChi2()
 		prob_j = ROOT.TMath.Prob(chi2_j,int(nmeas_j))
 		rchi2_j = chi2_j/nmeas_j
-
+		# print('4')
 
 		'''
 			Reconstructed momentum
@@ -635,7 +568,7 @@ def create_pair(i,j, weight_i, weight_j):
 		P_i= fittedState_i.getMomMag()
 		P_j = fittedState_j.getMomMag()
 
-
+		# print('5')
 		'''
 			Need to check there are digi hits in straw tubes before and after magnet, for example:
 				hits_before_and_after_i = 1 yes
@@ -707,14 +640,15 @@ def create_pair(i,j, weight_i, weight_j):
 		'''
 
 		pair = [fittedState_i,fittedState_j]
-
+		# print('5.25')
 		xv,yv,zv,doca = RedoVertexing(pair[0],pair[1])
+		# print('5.5')
 		fid = isInFiducial(xv,yv,zv)
 		if fid == True:
 			fid = 1
 		elif fid == False:
 			fid = 0
-
+		# print('6')
 
 		'''
 			Combine momentum of the two tracks to create HNLMom, use with HNLPos in ImpactParameter2() to get dist
@@ -730,7 +664,7 @@ def create_pair(i,j, weight_i, weight_j):
 		# # HNLMom = [sum of momentum of charged tracks]
 		tr = ROOT.TVector3(0,0,ShipGeo.target.z0)
 		dist = ImpactParameter2(tr,HNLPos,HNLMom)
-
+		# print('7')
 
 		'''
 			Get initial momentum of each muon in the target - will use this for KDE GAN weights later on
@@ -770,9 +704,11 @@ def create_pair(i,j, weight_i, weight_j):
 
 		'''
 		x_to_ip, y_to_ip, z_to_ip = ImpactParameter_x_y(tr,HNLPos,HNLMom)
-
+		# print('8')
 		pair_information = [pair_weight, nmeas_i, nmeas_j, rchi2_i, rchi2_j, P_i, P_j, doca, fid, dist, xv, yv, zv, np.sqrt(HNLMom[0]**2+HNLMom[1]**2+HNLMom[2]**2),x_to_ip, y_to_ip]
 		worked_bool = True
+		# print('9')
+		# quit()
 	except:
 		worked_bool = False
 		pair_information = 0
@@ -789,6 +725,7 @@ print('JobID =',job_id)
 track_location_array = np.load('track_location_array.npy')
 
 tracks_file = ROOT.TFile("tracks.root","read")
+
 
 file_path_start = '%sship.conical.MuonBack-TGeant4_rec_'%fileloc_rec
 file_path_end = '.root'
@@ -812,8 +749,8 @@ per_job = np.floor(np.shape(array_of_unique_parirs)[0]/number_of_jobs)
 
 this_job = per_job*job_id
 
-array_of_unique_parirs = array_of_unique_parirs[this_job:this_job+per_job]
 
+array_of_unique_parirs = array_of_unique_parirs[int(this_job):int(this_job+per_job)]
 
 
 number_of_fittracks = float(np.shape(track_location_array)[0])
@@ -828,12 +765,15 @@ collected_pair_info = np.empty((0,16))
 
 np.save('collected_pair_info_%d'%job_id,collected_pair_info)
 
-for unique_pair in array_of_unique_parirs:
+for unique_pair in array_of_unique_parirs[1:]:
 
 	try:
 		i = unique_pair[0]
 		j = unique_pair[1]
 		worked_bool,pair_info = create_pair(i,j,1,1)
+
+		# quit()
+
 		if worked_bool == True:
 			pairs_run_through += 1
 			collected_pair_info = np.append(collected_pair_info, [pair_info], axis=0)
