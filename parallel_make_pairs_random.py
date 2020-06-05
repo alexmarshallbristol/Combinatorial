@@ -326,42 +326,28 @@ def myVertex(t1,t2,PosDir):
 			Z = c.z()+v.z()*t
 			return X,Y,Z,abs(dist)
 def  RedoVertexing(t1,t2):    
-	# print('1')
 	PosDir = [] 
 	for tr in [t1,t2]:
 		xx  = tr
-		# help(xx)
-		# PosDir[tr] = [xx.getPos(),xx.getDir()]
-		# print(xx.getPos()[0])
 		PosDir.append([xx.getPos(),xx.getDir()])
-	# print(PosDir)
-	# PosDir[0] = [t1.getPos(),t1.getDir()]
-	# PosDir[1] = [t2.getPos(),t2.getDir()]
-	# print('here',PosDir)
-	# print('2')
+
 	xv,yv,zv,doca = myVertex(t1,t2,PosDir)
 # as we have learned, need iterative procedure
-	# print('3')
 	dz = 99999.
 	reps,states,newPosDir = {},{},{}
 	newPosDir = []
 	parallelToZ = ROOT.TVector3(0., 0., 1.)
 	rc = True 
 	step = 0
-	# print('4')
 	while dz > 0.1:
 		zBefore = zv
 		newPos = ROOT.TVector3(xv,yv,zv)
 	# make a new rep for track 1,2
 		for tr in [t1,t2]:     
 			xx = tr
-			# print('in')
 			reps[tr]   = ROOT.genfit.RKTrackRep(xx.getPDG())
-			# print('in1')
 			states[tr] = ROOT.genfit.StateOnPlane(reps[tr])
-			# print('in2')
 			reps[tr].setPosMom(states[tr],xx.getPos(),xx.getMom())
-			# print('in3')
 			try:
 				reps[tr].extrapolateToPoint(states[tr], newPos, False)
 			except:
@@ -369,20 +355,8 @@ def  RedoVertexing(t1,t2):
 				rc = False  
 				break
 
-
-			# help(reps[tr].getPos(states[tr]))
-			# print(reps[tr].getPos(states[tr]))
-			# print(reps[tr].getPos(states[tr])[0])
-			# print(float(reps[tr].getPos(states[tr])[0]))
-
-			# newPosDir[tr] = [reps[tr].getPos(states[tr]),reps[tr].getDir(states[tr])]
-
-			# newPosDir.append([float(reps[tr].getPos(states[tr])[0]),float(reps[tr].getPos(states[tr])[1]),float(reps[tr].getPos(states[tr])[2]),float(reps[tr].getDir(states[tr])[0]),float(reps[tr].getDir(states[tr])[1]),float(reps[tr].getDir(states[tr])[2])])
-			# print('in4')
 			newPosDir.append([reps[tr].getPos(states[tr]),reps[tr].getDir(states[tr])])
-			# print('in5')
-			# print('newposdir',newPosDir)
-		# print('fff')
+	
 		if not rc: break
 		xv,yv,zv,doca = myVertex(t1,t2,newPosDir)
 		dz = abs(zBefore-zv)
@@ -504,36 +478,27 @@ def create_pair(i,j, weight_i, weight_j):
 	'''
 		Load correct tracks from file, based on indexes i and j
 	'''
-	print('creating pair',i,j,weight_i,weight_j)
+	# print('creating pair',i,j,weight_i,weight_j)
 	try:
 		key_i = tracks_file.GetListOfKeys()[i]
 		get_track_string = 'track'+find_between(str(key_i),"track"," ")+';1'
 		track_i = tracks_file.Get(get_track_string)
 
-		# print(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])]+";1")
-		# # print(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])])
 		# track_i = tracks_file.Get(str(key_i)[str(key_i).find('"')+1:str(key_i)[str(key_i).find('"')+1:].find('"')-len(str(key_i)[str(key_i).find('"')+1:])]+";1") 
-		# print(track_i)
 
 		
 
-		# help(track_i)
-		# print('end of 2')
 		fitStatus_i   = track_i.getFitStatus()
 		fittedState_i = track_i.getFittedState()
 
-		# print('end of 1')
-		# key_j = tracks_file.GetListOfKeys()[j]
 		# track_j = tracks_file.Get(str(key_j)[str(key_j).find('"')+1:str(key_j)[str(key_j).find('"')+1:].find('"')-len(str(key_j)[str(key_j).find('"')+1:])]+";1") 
 		
 		key_j = tracks_file.GetListOfKeys()[j]
 		get_track_string = 'track'+find_between(str(key_j),"track"," ")+';1'
 		track_j = tracks_file.Get(get_track_string)
 
-		# print('end of 2')
 		fitStatus_j   = track_j.getFitStatus()
 		fittedState_j = track_j.getFittedState()
-		# print('end of 2')
 
 
 
@@ -548,18 +513,14 @@ def create_pair(i,j, weight_i, weight_j):
 		'''
 			Get nmeas and reduced chi2
 		'''
-		# print('1')
 		nmeas_i = fitStatus_i.getNdf()
 		nmeas_j = fitStatus_j.getNdf()
-		# print('2')
 		chi2_i = fitStatus_i.getChi2()
 		prob_i = ROOT.TMath.Prob(chi2_i,int(nmeas_i))
 		rchi2_i = chi2_i/nmeas_i
-		# print('3')
 		chi2_j = fitStatus_j.getChi2()
 		prob_j = ROOT.TMath.Prob(chi2_j,int(nmeas_j))
 		rchi2_j = chi2_j/nmeas_j
-		# print('4')
 
 		'''
 			Reconstructed momentum
@@ -568,7 +529,6 @@ def create_pair(i,j, weight_i, weight_j):
 		P_i= fittedState_i.getMomMag()
 		P_j = fittedState_j.getMomMag()
 
-		# print('5')
 		'''
 			Need to check there are digi hits in straw tubes before and after magnet, for example:
 				hits_before_and_after_i = 1 yes
@@ -640,15 +600,12 @@ def create_pair(i,j, weight_i, weight_j):
 		'''
 
 		pair = [fittedState_i,fittedState_j]
-		# print('5.25')
 		xv,yv,zv,doca = RedoVertexing(pair[0],pair[1])
-		# print('5.5')
 		fid = isInFiducial(xv,yv,zv)
 		if fid == True:
 			fid = 1
 		elif fid == False:
 			fid = 0
-		# print('6')
 
 		'''
 			Combine momentum of the two tracks to create HNLMom, use with HNLPos in ImpactParameter2() to get dist
@@ -664,7 +621,6 @@ def create_pair(i,j, weight_i, weight_j):
 		# # HNLMom = [sum of momentum of charged tracks]
 		tr = ROOT.TVector3(0,0,ShipGeo.target.z0)
 		dist = ImpactParameter2(tr,HNLPos,HNLMom)
-		# print('7')
 
 		'''
 			Get initial momentum of each muon in the target - will use this for KDE GAN weights later on
@@ -704,11 +660,9 @@ def create_pair(i,j, weight_i, weight_j):
 
 		'''
 		x_to_ip, y_to_ip, z_to_ip = ImpactParameter_x_y(tr,HNLPos,HNLMom)
-		# print('8')
 		pair_information = [pair_weight, nmeas_i, nmeas_j, rchi2_i, rchi2_j, P_i, P_j, doca, fid, dist, xv, yv, zv, np.sqrt(HNLMom[0]**2+HNLMom[1]**2+HNLMom[2]**2),x_to_ip, y_to_ip]
 		worked_bool = True
-		# print('9')
-		# quit()
+
 	except:
 		worked_bool = False
 		pair_information = 0
@@ -734,11 +688,6 @@ file_path_end = '.root'
 
 array_of_unique_parirs = np.load('array_of_unique_parirs.npy')
 
-
-
-
-# PAIR_DATA="/eos/experiment/ship/user/amarshal/muflux_root_1M/"
-# fileloc
 
 fileloc_pair = results.fileloc_pair
 
@@ -771,8 +720,6 @@ for unique_pair in array_of_unique_parirs[1:]:
 		i = unique_pair[0]
 		j = unique_pair[1]
 		worked_bool,pair_info = create_pair(i,j,1,1)
-
-		# quit()
 
 		if worked_bool == True:
 			pairs_run_through += 1

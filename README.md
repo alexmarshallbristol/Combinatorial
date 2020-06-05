@@ -1,182 +1,119 @@
 
 
-must have https://github.com/ShipSoft/FairShip installed in directory
-or change pointing in setup file
-source /cvmfs/ship.cern.ch/SHiP-2018/latest/setUp.sh
+# Updated Code for SHiP Combinatorial Background Studies
+
+Currently this repository contains the tools for creation of muon track pairs from muon input files. The full combinatorial background study requires more components, for example the analysis of signal samples, scripts studying cuts and rates of 5 years of SHiP, plotting and overlays of different samples. This code all exists and will all be added to this repository in time. 
+
+## Installing the code:
+
+- Clone this repository onto LXPLUS.
+
+```bash
+cd
+mkdir Combinatorial
+cd Combinatorial
+git clone https://github.com/alexmarshallbristol/Combinatorial.git
+```
+
+- Clone and install [FairShip](https://github.com/ShipSoft/FairShip) into the same directory. 
+```bash
+git clone https://github.com/ShipSoft/FairShip
+source /cvmfs/ship.cern.ch/SHiP-2020/latest/setUp.sh
+aliBuild build FairShip --default fairship --always-prefer-system --config-dir $SHIPDIST
+alienv enter FairShip/latest
+```
+
+- This repository comes with the 2020 [setup.sh](setup.sh) and [config.sh](config.sh) files, may have to recreate if FairShip has changed significantly.
+```bash
+rm config.sh
+eval alienv load FairShip/latest > config.sh
+```
+
+## Running the code:
+
+### Organising input muons.
+
+First step is to organise a muon input sample. ** Using this repository straight out the box means you can only use up to 7500 input files (maximum  number of condor jobs queued at once).**
+
+- Store muon samples in ROOT files (preferably each of approx 1 milion muons) on EOS. There are multiple potential sources of muon kinematics:
+	- SHiP collaboration background files, at "/eos/experiment/ship/data/Mbias/background-prod-2018/pythia8_Geant4_10.0_withCharmandBeauty_*mu.root"
+	- GAN muons, information for generation is presented in the [muGAN](https://github.com/alexmarshallbristol/muGAN) repository.
+	- Muon flux measurement data? Located at "/eos/experiment/ship/user/truf/muflux-reco/RUN_8000_*" 
+
+- Edit [setup.sh](setup.sh) to point the scripts to the location of muon input files, and the location to store various output files. 
+
+### Running input muons in FairShip
+
+- Run muons on FairShip with the [queue_run_muons.job](queue_run_muons.job) Condor jobscript. This should be configured by [setup.sh](setup.sh) to run a job for each input file.
+```bash
+condor_submit queue_run_muons.job
+condor_q
+```
+- This will output files like "ship.conical.MuonBack-TGeant4_rec_*.root" at the REC_FILES location specified in [setup.sh](setup.sh).
 
 
-should be able to run with only a point to folder contianing files of muons
-and fairship installed from git
-produce all plots.
+### Collecting tracks and preparing pairs
 
-for now this only works for up to 7500 files in the folder
-
-1- run muons with queue_run_muons.job
-
-2- run admin script
-	- create track files
-	- plot initial mom
-	- get single track info
-	- create pairs array
-
-3 - run pair jobs
-
-4 - collect data
-
-5 - plotting 
-
---------------------------------------------------------------------------------------------------------------------------------------------
-/eos/experiment/ship/user/amarshal/afs_folders/FairSHiP_run_GAN_muons
-
-	OVERALL STEPS
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
-	- [SLOW] Generate GAN muons on Blue Crystal and scp them to /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id/
-		- If you are generating more after muons in above directory are already run, you must generate new muons to a new directory.. say /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id2/. After this step you can put output of FairSHiP in the same directory: /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_FairSHiP/ (beacuse unlikely to have same 9 digit random_id).
-	
-		**** Can repeat the above step to add to statistics **** - probably never will as currently will have 3E8 pairs of background muons - will need to simulate a lot of signal to compare this to. basically unlimited background pairs to train a classifer on
+- The bash script [collate_tracks_and_prepare_pairs.sh](collate_tracks_and_prepare_pairs.sh) runs the following python scripts:
+	- create_track_file_random_id.py
+		- Creates **tracks.root**, a ROOT file storing all track object from across all files.
+		- Creates **track_location_array.npy**, a numpy file containing information about location of each track. Will allow access to MCTracks data later on. 
+		- Also creates **track_location_array_start_momentum.npy**, a store of the initial momentum informaiton of each muon that made a good track.
+	- Plot_track_initial_momentum.py
+		- Example plotting script.
+		- Plots information from **track_location_array_start_momentum.npy**
+	- get_tracks_from_file_random_id.py
+		- Skeleton script demonstrating how to get detailed simulation information about each muon that made a track. 
+		- Creates **track_truth_data.npy** for this example.
+	- parallel_pair_job_information.py
+		- Creates **array_of_unique_parirs.npy** a list of unique pairs to be created in parallel in the next stage of analysis. 
+		- The size of this list is dictated by NUM_PAIRS in [setup.sh](setup.sh).
+```bash
+. collate_tracks_and_prepare_pairs.sh
+```
 
 
-	- [INST] Count number of generated files in a directory and create list_of_file_ID.npy - each condor_submit can only look at one directory and only use one list_of_file_ID.npy file
-	- [MED] Run GAN muons down FairSHiP with 'SIMULATION FILES:' below
-		- output is reconstructed files in /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_FairSHiP/
-	- [INST] Count number of fittracks in /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_FairSHiP/
-	- [INST] Decide number of cores to work on, create a job_order.npy file.
-	- [FAST] Run parallel pair creating code
-	- [INST] Combine and plot results.
+### Creating unique track pairs
+
+- The list **array_of_unique_parirs.npy** contains information for what pairs to create.
+- The option NUM_CORES in [setup.sh](setup.sh) indicates how many jobs to spread these over, running [setup.sh](setup.sh) should automatically configure the condor job script, [queue_create_pairs.job](queue_create_pairs.job). 
+- To create pairs, queue the job script:
+```bash
+condor_submit queue_create_pairs.job
+condor_q
+```
+- This will output file like "collected_pair_info_*.npy" to the location PAIR_DATA defined in [setup.sh](setup.sh).
+- These arrays contain the following information about each muon pair:
+	- **pair_weight**: weight_i times weight_j
+	- **nmeas_i**: number of measurements for track i
+	- **nmeas_j**: number of measurements for track j
+	- **rchi2_i**: reduced chi2 value for track i
+	- **rchi2_j**: reduced chi2 value for track j
+	- **P_i**: total momentum of track i
+	- **P_j**: total momentum of track j
+	- **doca**: distance of closest approach between the two tracks
+	- **fid**: bool for whether the reconstructed vertex was in the fiducial volume
+	- **dist**: I.P w.r.t the target
+	- **xv**: x coordinate of the reconstructed vertex
+	- **yv**: y coordinate of the reconstructed vertex
+	- **zv**: z coordinate of the reconstructed vertex
+	- **np.sqrt(HNLMom[0]**2+HNLMom[1]**2+HNLMom[2]**2)** momentum of the reconstructed mother particle
+	- **x_to_ip**: x component of I.P w.r.t the target
+	- **y_to_ip**: y component of I.P w.r.t the target
+
+### Combining output and plotting
+
+- The bash script [Combine_output_and_plot.sh](Combine_output_and_plot.sh) runs the following python scripts:
+	- combine_output.py
+		- Combines the "collected_pair_info_*.npy" like files in the PAIR_DATA location into a single file **FULL_collected_pair_info.npy**.
+	- Make_plots.py
+		- Currently just a skeleton for a plotting script.
 
 
-			NOTE: EVEN WITH GAN THE SLOWEST STEP IS STILL GENERATING MUONS - MOSTLY DUE TO LACK OF ACCESS TO GPUs
+## Features to add
 
---------------------------------------------------------------------------------------------------------------------------------------------
-
-	RUNNING GAN GENERATED MUONS THROUGH FAIRSHIP AND ANALYSING MUONS THAT PRODUCE TRACKS
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
-	SIMULATION FILES:
-
-		fairship.tar.gz
-			- contains correct Z start position in shipgen/MuonBackGenerator.cxx
-			- macro/ShipReco.py creates Reco_finished.txt correctly
-
-		queue_run_GAN_muons.job
-			- queues FairSHiP running of files in /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id/*
-			- full run is 'queue 21431' (ls -l /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id/* | wc -l)
-			- transfer_input_files=fairship.tar.gz,convert.py,list_of_file_ID.npy,copy_file.py,copy_file_post.py
-			- each job takes ~ 5-6 hrs
-
-		convert.py
-			- converts .npy file (GAN ouput) to .root files (accepted by MuonBackGenerator.cxx)
-
-		list_of_file_ID.npy
-			- created by glob_random_id_files.py
-			- list of random_ids, e.g '100789780'
-			- information in this file defines the file id system 
-			- file must be recreated if more GAN .npy files are added to /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id/
-
-		copy_file.py
-			- file run on each job 
-			- takes -jobid and checks against list_of_file_ID.npy, copies correct input file from /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id/
-
-		copy_file_post.py
-			- file run on each job 
-			- takes -jobid and copies reconstructed output file ship.conical.MuonBack-TGeant4_rec.root to correct ouput name in /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_FairSHiP/
-
-		run_muons_exe
-			- executable for each condor job
-			- relies on environment variable "$id"/jobid
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
-	GENERAL REQUIRED FILES:
-
-		geofile_full.conical.Pythia8-TGeant4.root
-			- geometry file outputted by FairSHiP
-			- required for track and hit analysis 
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
-	ORGANISING OUTPUT FILES:
-
-		create_track_file_random_id.py
-			- loops through all outputted files glob.glob('/eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_FairSHiP/*'). Note, the code is immune to missing output files (failed jobs)
-			- currently this file runs cuts on track properties: can be edited 
-			- creates output files: tracks.root and track_location_array.npy
-			tracks.root
-				- saved root track objects for every track
-			track_location_array.npy
-				- information about track location in reco files, this information will be needed in get_tracks_from_file_random_id.py
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
-	ANALYSIS FILES:
-
-		get_tracks_from_file_random_id.py
-			- uses tracks.root and track_location_array.npy to quickly access all muons that produced tracks 
-			- uses list_of_file_ID.npy to cycle through any reco files to access hits 
-			- can produce plots of track properties and truth level muon hits for muons that procuded tracks 
-			- examples for how to access/plot hits are inside the code of this script. 
-			- saves track_truth_data.npy containing the following information for each track:
-				[weight, x_i, y_i, z_i, px_i, py_i, pz_i, sbt_bool, rpc_bool, x_ves, y_ves, z_ves, px_ves, py_ves, pz_ves, reco_mom, reco_mom_T]
-
-		GAN_KDE_ratio.npy
-			- currently this is /Users/am13743/Desktop/Data_for_GAN_paper_plots/ratio_35_small.npy
-
-		x_values_bins_limits_35.npy and y_values_bins_limits_35.npy
-			- bin edge values used in get_tracks_from_file_random_id.py to pull weight from GAN_KDE_ratio.npy for correct bin
-
-		checking_GAN_KDE.py
-			- checking orientation of ratio array is correct, output is test_KDE_ratio.png
-
-		get_ratio_for_weight_normalisation_35.py
-			- calculates the normalisation required to be applied to weights to maintain same muons/POT
-
-		track_truth_data.npy
-			- contains single track information, used by parallel_make_pairs.py script - instead of recalculating weight every pair. 
-
-		PARALLEL MAKE PAIRS FILES:
-
-			parallel_pair_job_information.py 
-				- serial job, no pairs (fast) - basically example code
-				- inputs are number of fittracks and number of jobs planned
-				- 45k pairs was roughly 10 minutes (previous full sim combi analysis)
-				- creates pair creation order for each job into file job_order.npy
-				- at the end is an example of code on each job using job_order.npy or work out which pairs to work on
-
-			job_order.npy
-				- structure: [job_id, start_major, start_minor] where a pair =[major, minor]
-
-			fairship.tar.gz
-				- still need to build fairship to access ShipAna.py functions that are used in parallel_make_pairs.py
-
-			queue_muon_pairs.job
-				- run pairs analysis in parallel 
-				- must communicate the number of jobs queued with values in parallel_make_pairs.py
-				- must transfer geo file: geofile_full.conical.Pythia8-TGeant4.root
-				- transfer job order
-
-			muon_pairs_exe
-				- executable for condor
-				- NOT COMPLETE FILE YET - need to understand what output of parallel_make_pairs.py will look like
-
-			parallel_make_pairs.py
-				- uses job_order.npy and -jobid to only loop over (keys of muons) pairs a specific job is required to compute
-				- loops over keys (keys point to tracks) in tracks.root
-				- function create_pair() computes calculations on each pair - currently this function is not written
-				- saves outputted information to /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_pairs/
-				- uses track_truth_data.npy to access muon weight information
-				- pair information array: [pair_weight, nmeas_i, nmeas_j, rchi2_i, rchi2_j, P_i, P_j, hits_before_and_after_i, hits_before_and_after_j, doca, fid, dist, xv, yv, zv, HNL_mom]
-
-			combine_pairs_output_information.py - NOT WRITTEN YET
-				- combines files in /eos/experiment/ship/user/amarshal/HUGE_GAN_random_id_pairs/
-
-			plot_pairs_output_information.py 
-				- plot combined pairs information from file produced by combine_pairs_output_information.py
-				- get_errors() function returns normalized histogram enteries, with weighted errors -> sqrt(sum(weights**2))
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
-WILL I EVENTUALLY ALSO WANT TO WEIGHT EVERYTHING TO ONE SPILL? THIS CORRECTION WOULD BE APPLIED IN get_tracks_from_file_random_id.py as say a factor of 1/0.7 if 70% of a spill was simulated
+- Scripts to run and analyse any flavour of signal. 
+- Complete plotting scripts, including comparison between 
+- Combinatorial analysis scripts - location on hard drive for now. 
+- Weighting of muons - previously removed for simplicity. 
 

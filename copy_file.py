@@ -7,7 +7,7 @@ import glob
 parser = argparse.ArgumentParser()
 parser.add_argument('-jobid', action='store', dest='jobid', type=int,
 					help='jobid')
-parser.add_argument('-fileloc', action='store', dest='fileloc', type=int,
+parser.add_argument('-fileloc', action='store', dest='fileloc', type=str,
 					help='fileloc')
 results = parser.parse_args()
 jobid = int(results.jobid)
